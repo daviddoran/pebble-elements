@@ -20,6 +20,7 @@ PBL_APP_INFO(MY_UUID,
 
 Window window;
 TextLayer symbol_layer;
+TextLayer name_layer;
 TextLayer second_layer;
 
 static char second_text[] = "00";
@@ -119,13 +120,19 @@ void handle_init(AppContextRef ctx) {
 
   const Element* element = get_element(now.tm_sec);
 
-  text_layer_init(&symbol_layer, GRect(0, 30, 144 /* width */, 50 /* height */));
+  text_layer_init(&name_layer, GRect(0, 121, 144 /* width */, 40 /* height */));
+  text_layer_set_font(&name_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
+  text_layer_set_text_alignment(&name_layer, GTextAlignmentCenter);
+  text_layer_set_text(&name_layer, element->name);
+  layer_add_child(&window.layer, &name_layer.layer);
+
+  text_layer_init(&symbol_layer, GRect(0, 67, 144 /* width */, 50 /* height */));
   text_layer_set_font(&symbol_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
   text_layer_set_text_alignment(&symbol_layer, GTextAlignmentCenter);
   text_layer_set_text(&symbol_layer, element->symbol);
   layer_add_child(&window.layer, &symbol_layer.layer);
 
-  text_layer_init(&second_layer, GRect(0, 80, 144 /* width */, 50 /* height */));
+  text_layer_init(&second_layer, GRect(0, 35, 144 /* width */, 35 /* height */));
   text_layer_set_font(&second_layer, fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK));
   text_layer_set_text_alignment(&second_layer, GTextAlignmentCenter);
   update_second_text(&now);
@@ -135,6 +142,7 @@ void handle_init(AppContextRef ctx) {
 void handle_tick(AppContextRef app_ctx, PebbleTickEvent *event) {
     const Element* element = get_element(event->tick_time->tm_sec);
     text_layer_set_text(&symbol_layer, element->symbol);
+    text_layer_set_text(&name_layer, element->name);
     update_second_text(event->tick_time);    
 }
 
