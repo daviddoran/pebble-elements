@@ -1,9 +1,9 @@
 /**
  * Periodic elements
  *
- * Basic Pebble watchface that currently just
- * displays the current second and the chemical
- * element with the corresponding atomic number.
+ * Basic Pebble watchface that displays the chemical
+ * element with the atomic number corresponding to
+ * the current minute.
  */
 
 #include "pebble_os.h"
@@ -19,74 +19,78 @@ PBL_APP_INFO(MY_UUID,
              APP_INFO_WATCH_FACE);
 
 Window window;
+Layer border_layer;
 TextLayer symbol_layer;
 TextLayer name_layer;
-TextLayer second_layer;
+TextLayer hour_layer;
+TextLayer minute_layer;
 
-static char second_text[] = "00";
-const char* second_format = "%S";
+static char hour_text[] = "00";
+const char* hour_format = "%H";
+static char minute_text[] = "00";
+const char* minute_format = "%M";
 
 const Element elements[] = {
-  {.atomic = 1, .symbol = "H", .name = "Hydrogen", .origin = "the Greek \'hydro\' and \'genes\' meaning water-forming", .group = 1, .period = 1, .weight = 1}, 
-  {.atomic = 2, .symbol = "He", .name = "Helium", .origin = "the Greek, \'helios\' meaning sun", .group = 18, .period = 1, .weight = 4}, 
-  {.atomic = 3, .symbol = "Li", .name = "Lithium", .origin = "the Greek \'lithos\' meaning stone", .group = 1, .period = 2, .weight = 6}, 
-  {.atomic = 4, .symbol = "Be", .name = "Beryllium", .origin = "the Greek name for beryl, \'beryllo\'", .group = 2, .period = 2, .weight = 9}, 
-  {.atomic = 5, .symbol = "B", .name = "Boron", .origin = "the Arabic \'buraq\', which was the name for borax", .group = 13, .period = 2, .weight = 10}, 
-  {.atomic = 6, .symbol = "C", .name = "Carbon", .origin = "the Latin \'carbo\', meaning charcoal", .group = 14, .period = 2, .weight = 12}, 
-  {.atomic = 7, .symbol = "N", .name = "Nitrogen", .origin = "the Greek \'nitron\' and \'genes\' meaning nitre-forming", .group = 15, .period = 2, .weight = 14}, 
-  {.atomic = 8, .symbol = "O", .name = "Oxygen", .origin = "the Greek \'oxy\' and \'genes\' meaning acid-forming", .group = 16, .period = 2, .weight = 15}, 
-  {.atomic = 9, .symbol = "F", .name = "Fluorine", .origin = "the Latin \'fluere\', meaning to flow", .group = 17, .period = 2, .weight = 18}, 
-  {.atomic = 10, .symbol = "Ne", .name = "Neon", .origin = "the Greek \'neos\', meaning new", .group = 18, .period = 2, .weight = 20}, 
-  {.atomic = 11, .symbol = "Na", .name = "Sodium", .origin = "the English word soda (natrium in Latin)[2]", .group = 1, .period = 3, .weight = 22}, 
-  {.atomic = 12, .symbol = "Mg", .name = "Magnesium", .origin = "Magnesia, a district of Eastern Thessaly in Greece", .group = 2, .period = 3, .weight = 24}, 
-  {.atomic = 13, .symbol = "Al", .name = "Aluminium", .origin = "the Latin name for alum, \'alumen\' meaning bitter salt", .group = 13, .period = 3, .weight = 26}, 
-  {.atomic = 14, .symbol = "Si", .name = "Silicon", .origin = "the Latin \'silex\' or \'silicis\', meaning flint", .group = 14, .period = 3, .weight = 28}, 
-  {.atomic = 15, .symbol = "P", .name = "Phosphorus", .origin = "the Greek \'phosphoros\', meaning bringer of light", .group = 15, .period = 3, .weight = 30}, 
-  {.atomic = 16, .symbol = "S", .name = "Sulfur", .origin = "Either from the Sanskrit \'sulvere\', or the Latin \'sulfurium\', both names for sulfur[2]", .group = 16, .period = 3, .weight = 32}, 
-  {.atomic = 17, .symbol = "Cl", .name = "Chlorine", .origin = "the Greek \'chloros\', meaning greenish yellow", .group = 17, .period = 3, .weight = 35}, 
-  {.atomic = 18, .symbol = "Ar", .name = "Argon", .origin = "the Greek, \'argos\', meaning idle", .group = 18, .period = 3, .weight = 39}, 
-  {.atomic = 19, .symbol = "K", .name = "Potassium", .origin = "the English word potash (kalium in Latin)[2]", .group = 1, .period = 4, .weight = 39}, 
-  {.atomic = 20, .symbol = "Ca", .name = "Calcium", .origin = "the Latin \'calx\' meaning lime", .group = 2, .period = 4, .weight = 40}, 
-  {.atomic = 21, .symbol = "Sc", .name = "Scandium", .origin = "Scandinavia (with the Latin name Scandia)", .group = 3, .period = 4, .weight = 44}, 
-  {.atomic = 22, .symbol = "Ti", .name = "Titanium", .origin = "Titans, the sons of the Earth goddess of Greek mythology", .group = 4, .period = 4, .weight = 47}, 
-  {.atomic = 23, .symbol = "V", .name = "Vanadium", .origin = "Vanadis, an old Norse name for the Scandinavian goddess Freyja", .group = 5, .period = 4, .weight = 50}, 
-  {.atomic = 24, .symbol = "Cr", .name = "Chromium", .origin = "the Greek \'chroma\', meaning colour", .group = 6, .period = 4, .weight = 51}, 
-  {.atomic = 25, .symbol = "Mn", .name = "Manganese", .origin = "Either the Latin \'magnes\', meaning magnet or from the black magnesium oxide, \'magnesia nigra\'", .group = 7, .period = 4, .weight = 54}, 
-  {.atomic = 26, .symbol = "Fe", .name = "Iron", .origin = "the Anglo-Saxon name iren (ferrum in Latin)", .group = 8, .period = 4, .weight = 55}, 
-  {.atomic = 27, .symbol = "Co", .name = "Cobalt", .origin = "the German word \'kobald\', meaning goblin", .group = 9, .period = 4, .weight = 58}, 
-  {.atomic = 28, .symbol = "Ni", .name = "Nickel", .origin = "the shortened of the German \'kupfernickel\' meaning either devil\'s copper or St. Nicholas\'s copper", .group = 10, .period = 4, .weight = 58}, 
-  {.atomic = 29, .symbol = "Cu", .name = "Copper", .origin = "the Old English name coper in turn derived from the Latin \'Cyprium aes\', meaning a metal from Cyprus", .group = 11, .period = 4, .weight = 63}, 
-  {.atomic = 30, .symbol = "Zn", .name = "Zinc", .origin = "the German, \'zinc\', which may in turn be derived from the Persian word \'sing\', meaning stone", .group = 12, .period = 4, .weight = 65}, 
-  {.atomic = 31, .symbol = "Ga", .name = "Gallium", .origin = "France (with the Latin name Gallia)", .group = 13, .period = 4, .weight = 69}, 
-  {.atomic = 32, .symbol = "Ge", .name = "Germanium", .origin = "Germany (with the Latin name Germania)", .group = 14, .period = 4, .weight = 72}, 
-  {.atomic = 33, .symbol = "As", .name = "Arsenic", .origin = "the Greek name \'arsenikon\' for the yellow pigment orpiment", .group = 15, .period = 4, .weight = 74}, 
-  {.atomic = 34, .symbol = "Se", .name = "Selenium", .origin = "Moon (with the Greek name selene)", .group = 16, .period = 4, .weight = 78}, 
-  {.atomic = 35, .symbol = "Br", .name = "Bromine", .origin = "the Greek \'bromos\' meaning stench", .group = 17, .period = 4, .weight = 79}, 
-  {.atomic = 36, .symbol = "Kr", .name = "Krypton", .origin = "the Greek \'kryptos\', meaning hidden", .group = 18, .period = 4, .weight = 83}, 
-  {.atomic = 37, .symbol = "Rb", .name = "Rubidium", .origin = "the Latin \'rubidius\', meaning deepest red", .group = 1, .period = 5, .weight = 85}, 
-  {.atomic = 38, .symbol = "Sr", .name = "Strontium", .origin = "Strontian, a small town in Scotland", .group = 2, .period = 5, .weight = 87}, 
-  {.atomic = 39, .symbol = "Y", .name = "Yttrium", .origin = "Ytterby, Sweden", .group = 3, .period = 5, .weight = 88}, 
-  {.atomic = 40, .symbol = "Zr", .name = "Zirconium", .origin = "the Persian \'zargun\', meaning gold coloured", .group = 4, .period = 5, .weight = 91}, 
-  {.atomic = 41, .symbol = "Nb", .name = "Niobium", .origin = "Niobe, daughter of king Tantalus from Greek mythology", .group = 5, .period = 5, .weight = 92}, 
-  {.atomic = 42, .symbol = "Mo", .name = "Molybdenum", .origin = "the Greek \'molybdos\' meaning lead", .group = 6, .period = 5, .weight = 95}, 
-  {.atomic = 43, .symbol = "Tc", .name = "Technetium", .origin = "the Greek \'tekhnetos\' meaning artificial", .group = 7, .period = 5, .weight = 98}, 
-  {.atomic = 44, .symbol = "Ru", .name = "Ruthenium", .origin = "Russia (with the Latin name Ruthenia)", .group = 8, .period = 5, .weight = 101}, 
-  {.atomic = 45, .symbol = "Rh", .name = "Rhodium", .origin = "the Greek \'rhodon\', meaning rose coloured", .group = 9, .period = 5, .weight = 102}, 
-  {.atomic = 46, .symbol = "Pd", .name = "Palladium", .origin = "From the asteroid Pallas which had been recently discovered and named at the time. The asteroid was considered a planet when it was discovered", .group = 10, .period = 5, .weight = 106}, 
-  {.atomic = 47, .symbol = "Ag", .name = "Silver", .origin = "the Anglo-Saxon name siolfur (argentum in Latin)[2]", .group = 11, .period = 5, .weight = 107}, 
-  {.atomic = 48, .symbol = "Cd", .name = "Cadmium", .origin = "the Latin name for the mineral calmine, \'cadmia\'", .group = 12, .period = 5, .weight = 112}, 
-  {.atomic = 49, .symbol = "In", .name = "Indium", .origin = "the Latin \'indicium\', meaning violet or indigo", .group = 13, .period = 5, .weight = 114}, 
-  {.atomic = 50, .symbol = "Sn", .name = "Tin", .origin = "the Anglo-Saxon word tin (stannum in Latin, meaning hard)", .group = 14, .period = 5, .weight = 118}, 
-  {.atomic = 51, .symbol = "Sb", .name = "Antimony", .origin = "the Greek \'anti-monos\', meaning not alone (stibium in Latin)", .group = 15, .period = 5, .weight = 121}, 
-  {.atomic = 52, .symbol = "Te", .name = "Tellurium", .origin = "Earth, the third planet on solar system (with the Latin word tellus)", .group = 16, .period = 5, .weight = 127}, 
-  {.atomic = 53, .symbol = "I", .name = "Iodine", .origin = "the Greek \'iodes\' meaning violet", .group = 17, .period = 5, .weight = 126}, 
-  {.atomic = 54, .symbol = "Xe", .name = "Xenon", .origin = "the Greek \'xenos\' meaning stranger", .group = 18, .period = 5, .weight = 131}, 
-  {.atomic = 55, .symbol = "Cs", .name = "Caesium", .origin = "the Latin \'caesius\', meaning sky blue", .group = 1, .period = 6, .weight = 132}, 
-  {.atomic = 56, .symbol = "Ba", .name = "Barium", .origin = "the Greek \'barys\', meaning heavy", .group = 2, .period = 6, .weight = 137}, 
-  {.atomic = 57, .symbol = "La", .name = "Lanthanum", .origin = "the Greek \'lanthanein\', meaning to lie hidden", .group = 0, .period = 6, .weight = 138}, 
-  {.atomic = 58, .symbol = "Ce", .name = "Cerium", .origin = "Ceres, the Roman God of agriculture", .group = 0, .period = 6, .weight = 140}, 
-  {.atomic = 59, .symbol = "Pr", .name = "Praseodymium", .origin = "the Greek \'prasios didymos\' meaning green twin", .group = 0, .period = 6, .weight = 140}, 
-  {.atomic = 60, .symbol = "Nd", .name = "Neodymium", .origin = "the Greek \'neos didymos\' meaning new twin", .group = 0, .period = 6, .weight = 144}
+  {.atomic = 1, .symbol = "H", .name = "Hydrogen"}, 
+  {.atomic = 2, .symbol = "He", .name = "Helium"}, 
+  {.atomic = 3, .symbol = "Li", .name = "Lithium"}, 
+  {.atomic = 4, .symbol = "Be", .name = "Beryllium"}, 
+  {.atomic = 5, .symbol = "B", .name = "Boron"}, 
+  {.atomic = 6, .symbol = "C", .name = "Carbon"}, 
+  {.atomic = 7, .symbol = "N", .name = "Nitrogen"}, 
+  {.atomic = 8, .symbol = "O", .name = "Oxygen"}, 
+  {.atomic = 9, .symbol = "F", .name = "Fluorine"}, 
+  {.atomic = 10, .symbol = "Ne", .name = "Neon"}, 
+  {.atomic = 11, .symbol = "Na", .name = "Sodium"}, 
+  {.atomic = 12, .symbol = "Mg", .name = "Magnesium"}, 
+  {.atomic = 13, .symbol = "Al", .name = "Aluminium"}, 
+  {.atomic = 14, .symbol = "Si", .name = "Silicon"}, 
+  {.atomic = 15, .symbol = "P", .name = "Phosphorus"}, 
+  {.atomic = 16, .symbol = "S", .name = "Sulfur"}, 
+  {.atomic = 17, .symbol = "Cl", .name = "Chlorine"}, 
+  {.atomic = 18, .symbol = "Ar", .name = "Argon"}, 
+  {.atomic = 19, .symbol = "K", .name = "Potassium"}, 
+  {.atomic = 20, .symbol = "Ca", .name = "Calcium"}, 
+  {.atomic = 21, .symbol = "Sc", .name = "Scandium"}, 
+  {.atomic = 22, .symbol = "Ti", .name = "Titanium"}, 
+  {.atomic = 23, .symbol = "V", .name = "Vanadium"}, 
+  {.atomic = 24, .symbol = "Cr", .name = "Chromium"}, 
+  {.atomic = 25, .symbol = "Mn", .name = "Manganese"}, 
+  {.atomic = 26, .symbol = "Fe", .name = "Iron"}, 
+  {.atomic = 27, .symbol = "Co", .name = "Cobalt"}, 
+  {.atomic = 28, .symbol = "Ni", .name = "Nickel"}, 
+  {.atomic = 29, .symbol = "Cu", .name = "Copper"}, 
+  {.atomic = 30, .symbol = "Zn", .name = "Zinc"}, 
+  {.atomic = 31, .symbol = "Ga", .name = "Gallium"}, 
+  {.atomic = 32, .symbol = "Ge", .name = "Germanium"}, 
+  {.atomic = 33, .symbol = "As", .name = "Arsenic"}, 
+  {.atomic = 34, .symbol = "Se", .name = "Selenium"}, 
+  {.atomic = 35, .symbol = "Br", .name = "Bromine"}, 
+  {.atomic = 36, .symbol = "Kr", .name = "Krypton"}, 
+  {.atomic = 37, .symbol = "Rb", .name = "Rubidium"}, 
+  {.atomic = 38, .symbol = "Sr", .name = "Strontium"}, 
+  {.atomic = 39, .symbol = "Y", .name = "Yttrium"}, 
+  {.atomic = 40, .symbol = "Zr", .name = "Zirconium"}, 
+  {.atomic = 41, .symbol = "Nb", .name = "Niobium"}, 
+  {.atomic = 42, .symbol = "Mo", .name = "Molybdenum"}, 
+  {.atomic = 43, .symbol = "Tc", .name = "Technetium"}, 
+  {.atomic = 44, .symbol = "Ru", .name = "Ruthenium"}, 
+  {.atomic = 45, .symbol = "Rh", .name = "Rhodium"}, 
+  {.atomic = 46, .symbol = "Pd", .name = "Palladium"}, 
+  {.atomic = 47, .symbol = "Ag", .name = "Silver"}, 
+  {.atomic = 48, .symbol = "Cd", .name = "Cadmium"}, 
+  {.atomic = 49, .symbol = "In", .name = "Indium"}, 
+  {.atomic = 50, .symbol = "Sn", .name = "Tin"}, 
+  {.atomic = 51, .symbol = "Sb", .name = "Antimony"}, 
+  {.atomic = 52, .symbol = "Te", .name = "Tellurium"}, 
+  {.atomic = 53, .symbol = "I", .name = "Iodine"}, 
+  {.atomic = 54, .symbol = "Xe", .name = "Xenon"}, 
+  {.atomic = 55, .symbol = "Cs", .name = "Caesium"}, 
+  {.atomic = 56, .symbol = "Ba", .name = "Barium"}, 
+  {.atomic = 57, .symbol = "La", .name = "Lanthanum"}, 
+  {.atomic = 58, .symbol = "Ce", .name = "Cerium"}, 
+  {.atomic = 59, .symbol = "Pr", .name = "Praseodymium"}, 
+  {.atomic = 60, .symbol = "Nd", .name = "Neodymium"}
 };
 
 const uint8_t num_elements = 60;
@@ -101,14 +105,34 @@ const Element* get_element(uint8_t atomic_number) {
   return &elements[atomic_number-1];
 }
 
-void update_second_text(PblTm * time) {
+void update_hour_text(PblTm * time) {
+  string_format_time(hour_text, sizeof(hour_text), hour_format, time);
+  text_layer_set_text(&hour_layer, hour_text);
+}
+
+void update_minute_text(PblTm * time) {
   char* display_00 = "60";
-  if (0 == time->tm_sec) {
-    text_layer_set_text(&second_layer, display_00);
+  if (0 == time->tm_min) {
+    text_layer_set_text(&minute_layer, display_00);
   } else {
-    string_format_time(second_text, sizeof(second_text), second_format, time);
-    text_layer_set_text(&second_layer, second_text);
+    string_format_time(minute_text, sizeof(minute_text), minute_format, time);
+    text_layer_set_text(&minute_layer, minute_text);
   }
+}
+
+void border_layer_draw(Layer *layer, GContext *ctx) {
+  const uint8_t border_width = 5;
+  graphics_context_set_fill_color(ctx, GColorBlack);
+  //top border
+  graphics_fill_rect(ctx, GRect(0, 0, layer->bounds.size.w, border_width), 0, GCornerNone);
+  //right border
+  graphics_fill_rect(ctx, GRect(layer->bounds.size.w - border_width, 0, border_width, layer->bounds.size.h), 0, GCornerNone);
+  //bottom border
+  graphics_fill_rect(ctx, GRect(0, layer->bounds.size.h - border_width, layer->bounds.size.w, border_width), 0, GCornerNone);
+  //left border (before hour)
+  graphics_fill_rect(ctx, GRect(0, 0, border_width, 15), 0, GCornerNone);
+  //left border (after hour)
+  graphics_fill_rect(ctx, GRect(0, 34 + 18, border_width, 66), 0, GCornerNone);
 }
 
 void handle_init(AppContextRef ctx) {
@@ -118,32 +142,47 @@ void handle_init(AppContextRef ctx) {
   PblTm now;
   get_time(&now);
 
-  const Element* element = get_element(now.tm_sec);
+  const Element* element = get_element(now.tm_min);
 
-  text_layer_init(&name_layer, GRect(0, 121, 144 /* width */, 40 /* height */));
+  layer_init(&border_layer, GRect(43 - 10, 22, 91, 100));
+  border_layer.update_proc = border_layer_draw;
+  layer_add_child(&window.layer, &border_layer);
+
+  text_layer_init(&name_layer, GRect(25, 121, 107 /* width */, 40 /* height */));
+  text_layer_set_background_color(&name_layer, GColorClear);
   text_layer_set_font(&name_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
   text_layer_set_text_alignment(&name_layer, GTextAlignmentCenter);
   text_layer_set_text(&name_layer, element->name);
   layer_add_child(&window.layer, &name_layer.layer);
 
-  text_layer_init(&symbol_layer, GRect(0, 67, 144 /* width */, 50 /* height */));
+  text_layer_init(&symbol_layer, GRect(38, 67, 81 /* width */, 50 /* height */));
+  text_layer_set_background_color(&symbol_layer, GColorClear);
   text_layer_set_font(&symbol_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
   text_layer_set_text_alignment(&symbol_layer, GTextAlignmentCenter);
   text_layer_set_text(&symbol_layer, element->symbol);
   layer_add_child(&window.layer, &symbol_layer.layer);
 
-  text_layer_init(&second_layer, GRect(0, 35, 144 /* width */, 35 /* height */));
-  text_layer_set_font(&second_layer, fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK));
-  text_layer_set_text_alignment(&second_layer, GTextAlignmentCenter);
-  update_second_text(&now);
-  layer_add_child(&window.layer, &second_layer.layer);
+  text_layer_init(&hour_layer, GRect(0, 35, 50 /* width */, 35 /* height */));
+  text_layer_set_background_color(&hour_layer, GColorClear);
+  text_layer_set_font(&hour_layer, fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK));
+  text_layer_set_text_alignment(&hour_layer, GTextAlignmentCenter);
+  update_hour_text(&now);
+  layer_add_child(&window.layer, &hour_layer.layer);
+
+  text_layer_init(&minute_layer, GRect(38, 35, 81, 35));
+  text_layer_set_background_color(&minute_layer, GColorClear);
+  text_layer_set_font(&minute_layer, fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK));
+  text_layer_set_text_alignment(&minute_layer, GTextAlignmentCenter);
+  update_minute_text(&now);
+  layer_add_child(&window.layer, &minute_layer.layer);
 }
 
 void handle_tick(AppContextRef app_ctx, PebbleTickEvent *event) {
-    const Element* element = get_element(event->tick_time->tm_sec);
+    const Element* element = get_element(event->tick_time->tm_min);
     text_layer_set_text(&symbol_layer, element->symbol);
     text_layer_set_text(&name_layer, element->name);
-    update_second_text(event->tick_time);    
+    update_hour_text(event->tick_time);    
+    update_minute_text(event->tick_time);    
 }
 
 void pbl_main(void *params) {
@@ -151,7 +190,7 @@ void pbl_main(void *params) {
     .init_handler = &handle_init,
     .tick_info = {
       .tick_handler = &handle_tick,
-      .tick_units = SECOND_UNIT
+      .tick_units = MINUTE_UNIT
     }
   };
   app_event_loop(params, &handlers);
