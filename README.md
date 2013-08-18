@@ -1,6 +1,8 @@
-# Pebble Chemical Elements Watchface
+# Chemical Elements Watch Face
 
 This simple watch face shows the current hour and minute and the symbol and name of the chemical element with the atomic number of the current minute.
+
+![Inverted Watch Face](http://daviddoran.github.io/pebble-elements/action-shot-inverted.jpg "Inverted Watch Face")
 
 ## Building From Source
 
