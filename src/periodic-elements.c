@@ -18,12 +18,22 @@ PBL_APP_INFO(MY_UUID,
              DEFAULT_MENU_ICON,
              APP_INFO_WATCH_FACE);
 
+// #define INVERSED_COLORS
+
+#ifndef INVERSED_COLORS
+#  define MainColor GColorBlack
+#  define BackgroundColor GColorWhite
+#else
+#  define MainColor GColorWhite
+#  define BackgroundColor GColorBlack
+#endif
+
 Window window;
 Layer border_layer;
-TextLayer symbol_layer;
-TextLayer name_layer;
 TextLayer hour_layer;
 TextLayer minute_layer;
+TextLayer symbol_layer;
+TextLayer name_layer;
 
 static char hour_text[] = "00";
 const char* hour_format = "%H";
@@ -105,12 +115,12 @@ const Element* get_element(uint8_t atomic_number) {
   return &elements[atomic_number-1];
 }
 
-void update_hour_text(PblTm * time) {
+void update_hour_text(PblTm* time) {
   string_format_time(hour_text, sizeof(hour_text), hour_format, time);
   text_layer_set_text(&hour_layer, hour_text);
 }
 
-void update_minute_text(PblTm * time) {
+void update_minute_text(PblTm* time) {
   char* display_00 = "60";
   if (0 == time->tm_min) {
     text_layer_set_text(&minute_layer, display_00);
@@ -120,9 +130,9 @@ void update_minute_text(PblTm * time) {
   }
 }
 
-void border_layer_draw(Layer *layer, GContext *ctx) {
+void border_layer_draw(Layer* layer, GContext* ctx) {
   const uint8_t border_width = 5;
-  graphics_context_set_fill_color(ctx, GColorBlack);
+  graphics_context_set_fill_color(ctx, MainColor);
   //top border
   graphics_fill_rect(ctx, GRect(0, 0, layer->bounds.size.w, border_width), 0, GCornerNone);
   //right border
@@ -139,6 +149,8 @@ void handle_init(AppContextRef ctx) {
   window_init(&window, "Periodic Elements");
   window_stack_push(&window, true /* Animated */);
 
+  window_set_background_color(&window, BackgroundColor);
+
   PblTm now;
   get_time(&now);
 
@@ -149,6 +161,7 @@ void handle_init(AppContextRef ctx) {
   layer_add_child(&window.layer, &border_layer);
 
   text_layer_init(&name_layer, GRect(25, 121, 107 /* width */, 40 /* height */));
+  text_layer_set_text_color(&name_layer, MainColor);
   text_layer_set_background_color(&name_layer, GColorClear);
   text_layer_set_font(&name_layer, fonts_get_system_font(FONT_KEY_GOTHIC_24_BOLD));
   text_layer_set_text_alignment(&name_layer, GTextAlignmentCenter);
@@ -156,6 +169,7 @@ void handle_init(AppContextRef ctx) {
   layer_add_child(&window.layer, &name_layer.layer);
 
   text_layer_init(&symbol_layer, GRect(38, 67, 81 /* width */, 50 /* height */));
+  text_layer_set_text_color(&symbol_layer, MainColor);
   text_layer_set_background_color(&symbol_layer, GColorClear);
   text_layer_set_font(&symbol_layer, fonts_get_system_font(FONT_KEY_BITHAM_42_BOLD));
   text_layer_set_text_alignment(&symbol_layer, GTextAlignmentCenter);
@@ -163,6 +177,7 @@ void handle_init(AppContextRef ctx) {
   layer_add_child(&window.layer, &symbol_layer.layer);
 
   text_layer_init(&hour_layer, GRect(0, 35, 50 /* width */, 35 /* height */));
+  text_layer_set_text_color(&hour_layer, MainColor);
   text_layer_set_background_color(&hour_layer, GColorClear);
   text_layer_set_font(&hour_layer, fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK));
   text_layer_set_text_alignment(&hour_layer, GTextAlignmentCenter);
@@ -170,6 +185,7 @@ void handle_init(AppContextRef ctx) {
   layer_add_child(&window.layer, &hour_layer.layer);
 
   text_layer_init(&minute_layer, GRect(38, 35, 81, 35));
+  text_layer_set_text_color(&minute_layer, MainColor);
   text_layer_set_background_color(&minute_layer, GColorClear);
   text_layer_set_font(&minute_layer, fonts_get_system_font(FONT_KEY_BITHAM_30_BLACK));
   text_layer_set_text_alignment(&minute_layer, GTextAlignmentCenter);
@@ -177,7 +193,7 @@ void handle_init(AppContextRef ctx) {
   layer_add_child(&window.layer, &minute_layer.layer);
 }
 
-void handle_tick(AppContextRef app_ctx, PebbleTickEvent *event) {
+void handle_tick(AppContextRef app_ctx, PebbleTickEvent* event) {
     const Element* element = get_element(event->tick_time->tm_min);
     text_layer_set_text(&symbol_layer, element->symbol);
     text_layer_set_text(&name_layer, element->name);
@@ -185,7 +201,7 @@ void handle_tick(AppContextRef app_ctx, PebbleTickEvent *event) {
     update_minute_text(event->tick_time);    
 }
 
-void pbl_main(void *params) {
+void pbl_main(void* params) {
   PebbleAppHandlers handlers = {
     .init_handler = &handle_init,
     .tick_info = {
